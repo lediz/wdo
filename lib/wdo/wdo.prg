@@ -13,7 +13,9 @@ CLASS WDO
 
 	METHOD Dbf( cDbf, cCdx )													CONSTRUCTOR
 	METHOD Rdbms( cRdbms, cServer, cUsername, cPassword, cDatabase, nPort ) 	CONSTRUCTOR			
-	METHOD ADO( cServer, cUsername, cPassword, cDatabase, lAutoOpen )																CONSTRUCTOR
+#ifdef WITH_ADO
+	METHOD ADO( cServer, cUsername, cPassword, cDatabase, lAutoOpen )			CONSTRUCTOR
+#endif
 	
 	METHOD Version()							INLINE WDO_VERSION
 	
@@ -33,12 +35,15 @@ METHOD Rdbms( cRdbms, cServer, cUsername, cPassword, cDatabase, nPort ) CLASS WD
 	cRdbms := upper( cRdbms )
 
 	DO CASE
-		CASE cRdbms == 'MYSQL'; 		oDb := RDBMS_MySql():New( cServer, cUsername, cPassword, cDatabase, nPort )
+		CASE cRdbms == 'MYSQL'; 		oDb := RDBMS_MySql():New( cServer, cUsername, cPassword, cDatabase, nPort, 'MYSQL' )
+		CASE cRdbms == 'MARIADB'; 		oDb := RDBMS_MySql():New( cServer, cUsername, cPassword, cDatabase, nPort, 'MARIADB' )
 		//CASE cRdbms == 'POSTGRESQL'; 	oDb := RDBMS_PG():New( cServer, cUsername, cPassword, cDatabase, nPort )
 		//CASE cRdbms == 'SQLITE'; 	oDb := RDBMS_SQLite():New( cServer, cUsername, cPassword, cDatabase, nPort )
 	ENDCASE
 
 RETU oDb
+
+#ifdef WITH_ADO
 
 METHOD ADO( cServer, cUsername, cPassword, cDatabase, lAutoOpen ) CLASS WDO
 
@@ -48,4 +53,4 @@ METHOD ADO( cServer, cUsername, cPassword, cDatabase, lAutoOpen ) CLASS WDO
 
 RETU oAdo
 
-
+#endif // WITH_ADO

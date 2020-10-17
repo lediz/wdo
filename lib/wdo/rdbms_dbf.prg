@@ -43,8 +43,8 @@ CLASS RDBMS_Dbf FROM RDBMS
 	METHOD FieldGet( ncField )  			INLINE IF ( ::lOpen, (::cAlias)->( FieldGet( If( ValType( ncField ) == "C", ::FieldPos( ncField ), ncField ) ) ), '' )
     METHOD FieldPut( ncField, uValue )	
 	
-    METHOD Next( n )  						INLINE IF ( ::lOpen, (::cAlias)->( DbSkip( n ) ), NIL )
-    METHOD Prev( n )  						INLINE IF ( ::lOpen, (::cAlias)->( DbSkip( -n ) ), NIL )
+    METHOD Next( n )  						INLINE IF ( ::lOpen, (::cAlias)->( DbSkip( 1 ) ), NIL )
+    METHOD Prev( n )  						INLINE IF ( ::lOpen, (::cAlias)->( DbSkip( -1 ) ), NIL )
     METHOD First() 						INLINE IF ( ::lOpen, (::cAlias)->( DbGoTop() ), NIL )
     METHOD Last() 							INLINE IF ( ::lOpen, (::cAlias)->( DbGoBottom() ), NIL )
 	
@@ -74,7 +74,7 @@ CLASS RDBMS_Dbf FROM RDBMS
     METHOD Info()							
 	
 	
-	DESTRUCTOR  Exit()					
+//	DESTRUCTOR  Exit()					
 
 ENDCLASS
 
@@ -381,7 +381,7 @@ METHOD Info() CLASS RDBMS_Dbf
 
 RETU NIL
 
-
+/*
 METHOD Exit() CLASS RDBMS_Dbf
 
 	IF  ::lOpen	
@@ -395,6 +395,7 @@ METHOD Exit() CLASS RDBMS_Dbf
 	ENDIF
 	
 RETU NIL
+*/
 
 *-----------------------------------
 STATIC FUNCTION ErrorHandler(oError)

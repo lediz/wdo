@@ -6,10 +6,9 @@
 	--------------------------------------------------------- */
 #include "hbdyn.ch"
 
-#define VERSION_RDBMS_MYSQL					'0.1a'
+#define VERSION_RDBMS_MYSQL				'0.1c'
 #define HB_VERSION_BITWIDTH  				17
 #define NULL  								0  
-
 
 	
 CLASS RDBMS_MySql FROM RDBMS
@@ -21,6 +20,7 @@ CLASS RDBMS_MySql FROM RDBMS
 	DATA cError 								INIT ''
 	DATA aFields 								INIT {}
 	DATA aLog 									INIT {}
+	DATA bError								INIT {|cError| AP_RPuts( '<br>' + cError ) }
 	
 	METHOD New() 								CONSTRUCTOR
 		
@@ -58,13 +58,14 @@ CLASS RDBMS_MySql FROM RDBMS
 
 ENDCLASS
 
-METHOD New( cServer, cUsername, cPassword, cDatabase, nPort ) CLASS RDBMS_MySql
+METHOD New( cServer, cUsername, cPassword, cDatabase, nPort, cType ) CLASS RDBMS_MySql
 
 	hb_default( @cServer, '' )
 	hb_default( @cUserName, '' )
 	hb_default( @cPassword, '' )
 	hb_default( @cDatabase, '' )
 	hb_default( @nPort, 3306 )
+	hb_default( @cType, 'MYSQL' )
 	
 	::cServer		:= cServer
 	::cUserName	:= cUserName
@@ -74,10 +75,19 @@ METHOD New( cServer, cUsername, cPassword, cDatabase, nPort ) CLASS RDBMS_MySql
 	
 	//	Cargamos lib mysql
 	
-		::pLib 	:= hb_LibLoad( hb_SysMySQL() )	
+		IF cType == 'MYSQL'
+			::pLib 	:= hb_LibLoad( hb_SysMySQL() )	
+		ELSE
+			::pLib 	:= hb_LibLoad( hb_SysMariaDb() )	
+		ENDIF
 
 		If ValType( ::pLib ) <> "P" 
 			::cError := "Error (MySQL library not found)" 
+			
+			IF Valtype( ::bError ) == 'B'
+				Eval( ::bError, ::cError )
+			ENDIF
+			
 			RETU Self
 		ENDIF
 	
@@ -87,6 +97,11 @@ METHOD New( cServer, cUsername, cPassword, cDatabase, nPort ) CLASS RDBMS_MySql
 	
 		IF ::hMySQL = 0 
 			::cError := "hMySQL = " + Str( ::hMySQL ) + " (MySQL library failed to initialize)"
+			
+			IF Valtype( ::bError ) == 'B'
+				Eval( ::bError, ::cError )
+			ENDIF			
+			
 			RETU Self
 		ENDIF
 		
@@ -101,6 +116,11 @@ METHOD New( cServer, cUsername, cPassword, cDatabase, nPort ) CLASS RDBMS_MySql
 		
 		IF  ::hConnection != ::hMySQL
 			::cError := "Connection = (Failed connection) " + ::mysql_error()
+			
+			IF Valtype( ::bError ) == 'B'
+				Eval( ::bError, ::cError )
+			ENDIF			
+			
 			RETU Self
 		ENDIF
 		
@@ -128,6 +148,11 @@ METHOD Query( cQuery ) CLASS RDBMS_MySql
 
 	ELSE
 		::cError := 'Error: ' + ::mysql_error()
+			
+		IF Valtype( ::bError ) == 'B'
+			Eval( ::bError, ::cError )
+		ENDIF
+		
 	ENDIF
    
 RETU hRes
@@ -351,9 +376,6 @@ return If( hb_version( HB_VERSION_BITWIDTH ) == 64,;
 
 //----------------------------------------------------------------//
 
-
-
-
 function hb_SysMySQL()
 
    local cLibName
@@ -366,6 +388,45 @@ function hb_SysMySQL()
          cLibName = If( hb_version( HB_VERSION_BITWIDTH ) == 64,;
                         "/usr/lib/x86_64-linux-gnu/libmysqlclient.so",; // libmysqlclient.so.20 for mariaDB
                         "/usr/lib/x86-linux-gnu/libmysqlclient.so" )
+      endif                  
+   else
+
+		IF hb_version( HB_VERSION_BITWIDTH ) == 64
+		
+			IF !Empty( HB_GetEnv( 'WDO_PATH_MYSQL' ) )
+				cLibName = HB_GetEnv( 'WDO_PATH_MYSQL' ) + 'libmysql64.dll'
+			ELSE
+				cLibName = "c:/Apache24/htdocs/libmysql64.dll"
+			ENDIF
+		
+		ELSE
+		
+			IF !Empty( HB_GetEnv( 'WDO_PATH_MYSQL' ) )
+				cLibName = HB_GetEnv( 'WDO_PATH_MYSQL' ) + 'libmysql.dll'
+			ELSE
+				cLibName = "c:/Apache24/htdocs/libmysql.dll"
+			ENDIF		
+		
+		ENDIF
+
+   endif
+
+return cLibName 
+
+//----------------------------------------------------------------//
+
+function hb_SysMariaDb()
+
+   local cLibName
+
+   
+   if ! "Windows" $ OS()
+      if "Darwin" $ OS()
+         cLibName = "/usr/local/Cellar/mysql/8.0.16/lib/libmysqlclient.dylib"
+      else   
+         cLibName = If( hb_version( HB_VERSION_BITWIDTH ) == 64,;
+                        "/usr/lib/x86_64-linux-gnu/libmariadbclient.so",; // libmysqlclient.so.20 for mariaDB
+                        "/usr/lib/x86-linux-gnu/libmariadbclient.so" )
       endif                  
    else
 
